@@ -1,5 +1,10 @@
 version: 0.2
 
+env:
+  variables:
+    REPO_NAME: "class"     
+    IMAGE_TAG: "latest"     
+
 phases:
   install:
     runtime-versions:
@@ -7,24 +12,27 @@ phases:
     commands:
       - echo Installing dependencies
       - npm install
-
   pre_build:
     commands:
-      - echo Nothing to do
+      - echo Nothing to do...
       - ls -l
 
   build:
     commands:
       - echo Build started on `date`
       - npm run build
-
+      - echo Building the Docker image...
+      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+      - TIME_TAG=`date +%Y-%m-%d-%H-%M`
+      - docker tag $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:$TIME_TAG
   post_build:
     commands:
-      - ls -l
-      - echo Build completed on `date`
+      - echo Pushing the Docker image to ECR...
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - docker push $REPOSITORY_URI:$TIME_TAG
+      - printf '[{"name":"web","imageUri":"%s"}]' "$REPOSITORY_URI:$IMAGE_TAG" > imagedefinitions.json
 
 artifacts:
   files:
     - dist/shop/*
     - dist/shop/assets/*
-    - appspec.yml
